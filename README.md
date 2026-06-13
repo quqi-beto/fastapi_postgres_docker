@@ -12,6 +12,7 @@ A production-ready Todo API service built with FastAPI, PostgreSQL, and SQLAlche
 - **Unit Tests**: 40 comprehensive tests covering models, schemas, and all endpoints
 - **SQLAlchemy ORM**: Type-safe database operations with declarative models
 - **FastAPI**: Modern async web framework with automatic API documentation (Swagger UI)
+- **Docker Ready**: Pre-configured Docker Compose setup for development and production with PostgreSQL
 
 ## Project Structure
 
@@ -38,8 +39,12 @@ fastapi_postgres_docker/
 │       ├── __init__.py
 │       ├── test_users.py       # User endpoint tests
 │       └── test_todos.py       # Todo endpoint tests
+├── Dockerfile                  # Docker image definition
+├── docker-compose.yml          # Production Docker Compose config
+├── docker-compose.override.yml # Development overrides (hot-reload)
+├── .dockerignore               # Docker build context exclusions
 ├── pyproject.toml              # Project metadata and dependencies
-├── .env                        # Environment variables (production)
+├── .env                        # Environment variables (local dev)
 ├── .env.test                   # Environment variables (testing)
 ├── .gitignore
 └── README.md
@@ -49,9 +54,10 @@ fastapi_postgres_docker/
 
 ### Prerequisites
 
-- Python 3.10+
-- PostgreSQL 12+ (for production)
-- `uv` package manager
+- Python 3.10+ (for local development without Docker)
+- PostgreSQL 12+ (for local development without Docker)
+- `uv` package manager (for local development without Docker)
+- **Docker** & **Docker Compose** (for containerized development/production)
 
 ### Setup
 
@@ -83,9 +89,73 @@ fastapi_postgres_docker/
    createdb todo_db
    ```
 
+### Docker Setup
+
+Run the entire stack (app + PostgreSQL) with a single command using Docker Compose.
+
+1. **Start the application** (development mode with hot-reload):
+   ```bash
+   docker compose up
+   ```
+   This builds the image, starts PostgreSQL, and runs the API with live code reloading. The `docker-compose.override.yml` is applied automatically.
+
+2. **Start in production mode** (no hot-reload, no volume mounts):
+   ```bash
+   docker compose -f docker-compose.yml up
+   ```
+
+3. **Stop the application**:
+   ```bash
+   docker compose down
+   ```
+
+4. **Stop and remove volumes** (wipes the database):
+   ```bash
+   docker compose down -v
+   ```
+
+5. **Rebuild the image** (after dependency changes):
+   ```bash
+   docker compose build
+   ```
+
+6. **View logs**:
+   ```bash
+   docker compose logs -f
+   ```
+
+The API will be available at `http://localhost:8000`
+PostgreSQL is exposed on port `5432` (can be used with local tools like psql).
+**pgAdmin** is available at `http://localhost:8080` (email: `admin@admin.com`, password: `secret`).
+
+To connect pgAdmin to your PostgreSQL database:
+
+1. Log in at `http://localhost:8080`
+2. Right-click **Servers** → **Register** → **Server**
+3. On the **General** tab, give it a name (e.g. `Todo DB`)
+4. On the **Connection** tab, enter:
+   - **Host name/address**: `db` (the Docker service name — not `localhost` or `127.0.0.1`)
+   - **Port**: `5432`
+   - **Maintenance database**: `todo_db`
+   - **Username**: `user`
+   - **Password**: `password`
+5. Click **Save**
+
+You should now see the `todos` and `users` tables under **Databases** → **todo_db** → **Schemas** → **public** → **Tables**.
+
+> **Note**: When running via Docker, the `DATABASE_URL` is set automatically in `docker-compose.yml` to `postgresql://user:password@db:5432/todo_db` (where `db` is the PostgreSQL container). Your local `.env` file remains untouched and is only used for local (non-Docker) development.
+
 ## Usage
 
 ### Run the API Server
+
+#### Option 1: Docker (recommended)
+
+```bash
+docker compose up
+```
+
+#### Option 2: Local development (without Docker)
 
 ```bash
 uv run uvicorn app.main:app --reload
@@ -207,6 +277,8 @@ curl -X PUT "http://localhost:8000/todos/1" \
 ```
 
 ## Database Schema
+
+Tables are **auto-created on application startup** via `Base.metadata.create_all()` in `app/main.py`. This reads the SQLAlchemy models and creates any missing tables — no manual migration or schema setup needed. The PostgreSQL data persists across restarts thanks to the Docker named volume (`postgres_data`).
 
 ### Users Table
 
@@ -341,7 +413,15 @@ For issues, questions, or suggestions, please open an issue in the repository.
 
 ## Next Steps
 
-To use this API in production with PostgreSQL:
+### Run with Docker (recommended for production)
+
+```bash
+docker compose -f docker-compose.yml up -d
+```
+
+This starts PostgreSQL and the API in the background. Access Swagger UI at `http://localhost:8000/docs`.
+
+### Run locally without Docker
 
 1. **Install PostgreSQL** and create a database
 2. **Update `.env`** with your PostgreSQL credentials
