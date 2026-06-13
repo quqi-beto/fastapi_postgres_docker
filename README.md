@@ -16,7 +16,7 @@ A production-ready Todo API service built with FastAPI, PostgreSQL, and SQLAlche
 ## Project Structure
 
 ```
-fastapi_postgres_sqlalchemy/
+fastapi_postgres_docker/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                 # FastAPI app and router registration
@@ -57,12 +57,14 @@ fastapi_postgres_sqlalchemy/
 
 1. **Clone the repository** (or navigate to the project directory)
    ```bash
-   cd fastapi_postgres_sqlalchemy
+   cd fastapi_postgres_docker
    ```
 
-2. **Activate the virtual environment** (created by `uv init`)
+2. **Create and Activate the virtual environment** (created by `uv init`)
    ```bash
    # On Windows
+   uv venv
+   uv sync
    .venv\Scripts\activate
    
    # On macOS/Linux
